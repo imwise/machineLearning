@@ -274,7 +274,7 @@ class SVMC:
         y2 = 0
         x2 = -self.b/w[0][0]
         plt.plot([x1+x1-x2, x2], [y1+y1-y2, y2])
-        plt.axis([0, 30, 0, 15])
+        plt.axis([0, 1, 0, 1])
 
         for i in xrange(self.M):
             if self.y[i] == -1:
