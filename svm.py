@@ -45,6 +45,7 @@ class SVMC:
         self.E = np.zeros((1, self.M)).flatten(1) # svm error
 
     def fitKKT(self,i):
+        self.updateE(i)
         if ((self.y[i]*self.E[i]<-self.tol) and (self.alpha[i]<self.C)) or \
         (((self.y[i]*self.E[i]>self.tol)) and (self.alpha[i]>0)):
             return False
@@ -74,7 +75,7 @@ class SVMC:
 
         j = rd.sample(range(self.M),1)
         while j == i:
-            j = rd.sample(range(self.M), 1) # what is the j's structure??
+            j = rd.sample(range(self.M), 1) # what is the j's structure?
         return j[0]
 
     def findMax(self, i, ls):
@@ -88,11 +89,11 @@ class SVMC:
 
         ansj = -1
         maxx = -1
-        self.updateE(i) # why the error have no changes here??
+        # self.updateE(i)
         for j in ls:
             if i == j:
                 continue
-            self.updateE(j) # why change errors here?
+            self.updateE(j)
             deltaE = np.abs(self.E[i]-self.E[j])
             if deltaE > maxx:
                 maxx = deltaE
@@ -111,8 +112,8 @@ class SVMC:
         :return: whether the inter loop should stop
         '''
         j = self.select(i)
-        self.updateE(j)
-        self.updateE(i)
+        # self.updateE(j)
+        # self.updateE(i)
         # set the box limitaion
         if (self.y[i] == self.y[j]):
             L = max(0, self.alpha[i]+self.alpha[j]-self.C)
@@ -130,7 +131,7 @@ class SVMC:
         K22 = self.kernel(self.X[:, j],self.X[:, j])
         eta = K11 + K22 - 2*K12
 
-        # why?
+        # why the condition may be True?
         if eta == 0:
             return True
 
@@ -155,8 +156,10 @@ class SVMC:
         else:
             self.b = (b1_new+b2_new)/2
 
-        self.updateE(j)
-        self.updateE(i)
+        # literally, we should update E here, but
+        # because we have updated E before we use them, we can comment them here
+        # self.updateE(j)
+        # self.updateE(i)
 
         return False
 
@@ -187,22 +190,22 @@ class SVMC:
 
         # initial E
         for i in xrange(self.M):
-            self.updateE(i)
+            self.updateE(i) # this update is necessary
 
         while (iters < maxiter) and (not flag):
             flag = True
             temp_supportVec = np.nonzero((self.alpha > 0))[0] # what is th format of output ?
             iters += 1
             for i in temp_supportVec:
-                self.updateE(i)
+                # self.updateE(i) # this update is necessary but we move it into the fitKKT(), so it is useless now
                 if not self.fitKKT(i):
-                    flag = flag and self.inerLoop(i, threshold)
+                    flag = (flag and self.inerLoop(i, threshold))
 
-            if flag: # why flag here?
+            if flag: # why this flag here?
                 for i in xrange(self.M):
-                    self.updateE(i)
+                    # self.updateE(i) # once alpha change, the Error should be changed, so be careful about E
                     if not self.fitKKT(i):
-                        flag = flag and self.inerLoop(i, threshold)
+                        flag = (flag and self.inerLoop(i, threshold))
 
             print "the %d-th train iter is running" %iters
 
