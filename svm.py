@@ -207,7 +207,7 @@ class SVMC:
                     if not self.fitKKT(i):
                         flag = (flag and self.inerLoop(i, threshold))
 
-            print "the %d-th train iter is running" %iters
+            # print "the %d-th train iter is running" %iters
 
         self.supportVec = np.nonzero((self.alpha > 0))[0]
 
@@ -252,7 +252,7 @@ class SVMC:
         :return: NULL
         '''
         py = np.array(self.pred(np.array(X))).flatten(1)
-        print "error case is:", np.sum(py!=np.array(y))
+        print "predict error case is:", np.sum(py!=np.array(y))
 
     # haven't understand the func
     def prints_test_linear(self):
@@ -267,7 +267,7 @@ class SVMC:
 
         w = w.reshape(1, w.size)
 
-        print np.sum(sign(np.dot(w, self.X) + self.b).flatten(1) != self.y), "errors"
+        print np.sum(sign(np.dot(w, self.X) + self.b).flatten(1) != self.y), "errors in trainning"
 
         x1 = 0
         y1 = -self.b/w[0][1]

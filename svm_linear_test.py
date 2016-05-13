@@ -77,18 +77,41 @@ y=[
 [1],
 [1],
 [1]]
-X=np.array(X).transpose()
-print X.shape
+# X=np.array(X).transpose()
+# print 'x shape is:', X.shape
+#
+#
+# y=np.array(y).flatten(1)
+# y[y==0]=-1
+# print 'y shape is:', y.shape
+#
+# svms=SVMC(X, y)
+# svms.train()
+
+setX=np.array(X[0:24]).transpose()
+print 'train x shape is:', setX.shape
 
 
-y=np.array(y).flatten(1)
-y[y==0]=-1
-print y.shape
+sety=np.array(y[0:24]).flatten(1)
+sety[sety==0]=-1
+print 'train y shape is:', sety.shape
 
-svms=SVMC(X,y)
+preX=np.array(X[24:35]).transpose()
+print 'predict x shape is:', preX.shape
+
+
+prey=np.array(y[24:35]).flatten(1)
+prey[prey==0]=-1
+print 'predict y shape is:', sety.shape
+
+svms=SVMC(setX, sety)
 svms.train()
+
+
 print len(svms.supportVec)
 for i in range(len(svms.supportVec)):
     t = svms.supportVec[i]
     print svms.X[:,t]
 svms.prints_test_linear()
+
+svms.error(preX,prey)
