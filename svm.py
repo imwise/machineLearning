@@ -16,13 +16,13 @@ def readSet():
     pass
 
 class SVMC:
-    def Liner_kernel(x,z):
+    def Linear_kernel(x,z):
         return np.sum(x*z)
 
-    def Gauss_kernel(self,x,z,sigma=2):
+    def Gauss_kernel(x,z,sigma=2):
         return np.exp(-np.sum((x-z)**2/(2*sigma**2)))
 
-    def __init__(self,X,y,C=10,tol=0.01,kernel=Liner_kernel):
+    def __init__(self,X,y,C=10,tol=0.01,kernel=Linear_kernel):
 
         '''
         :param X: N*M matrix for N is the # of features and M is the # of train case
@@ -45,15 +45,8 @@ class SVMC:
         self.E = np.zeros((1, self.M)).flatten(1) # svm error
 
     def fitKKT(self,i):
-        '''
-        Check whether alpha i fulfill the KKT condition
-
-        :param i: the index of alpha
-        :return: True/False
-        '''
-
-        if ((self.alpha[i] < self.C) and (self.y[i]*(self.E[i]) < -self.tol)) \
-            or ((self.alpha[i] > 0 ) and (self.y[i]*(self.E[i]) > self.tol)):
+        if ((self.y[i]*self.E[i]<-self.tol) and (self.alpha[i]<self.C)) or \
+        (((self.y[i]*self.E[i]>self.tol)) and (self.alpha[i]>0)):
             return False
         return True
 
@@ -109,7 +102,7 @@ class SVMC:
             return self.randJ(i)
         return ansj
 
-    def interLoop(self, i, threshold):
+    def inerLoop(self, i, threshold):
         '''
         Inter-Loop of SMO algorithm to update a, b, E
 
@@ -122,18 +115,19 @@ class SVMC:
         self.updateE(i)
         # set the box limitaion
         if (self.y[i] == self.y[j]):
-            L = max(0, self.alpha[i]+self.alpha[i]-self.C)
+            L = max(0, self.alpha[i]+self.alpha[j]-self.C)
             H = min (self.C, self.alpha[i]+self.alpha[j])
         else:
-            L = max(0, self.alpha[j]-self.alpha[i])
-            H = min(self.C, self.C + self.alpha[j])
+            L=max(0,self.alpha[j]-self.alpha[i])
+            H=min(self.C,self.C+self.alpha[j]-self.alpha[i])
+        #print L,H
 
         a2_old = self.alpha[j]
         a1_old = self.alpha[i]
 
-        K11 = self.kernel(self.X[:i],self.X[:,i])
-        K12 = self.kernel(self.X[:i],self.X[:,j])
-        K22 = self.kernel(self.X[:j],self.X[:,j])
+        K11 = self.kernel(self.X[:, i],self.X[:, i])
+        K12 = self.kernel(self.X[:, i],self.X[:, j])
+        K22 = self.kernel(self.X[:, j],self.X[:, j])
         eta = K11 + K22 - 2*K12
 
         # why?
@@ -148,13 +142,13 @@ class SVMC:
             self.alpha[j] = L
 
         if np.abs(self.alpha[j]-a2_old) < threshold:
-            print True
+            return True
 
         self.alpha[i] = self.alpha[i] + self.y[i]*self.y[j]*(a2_old - self.alpha[j])
         b1_new = self.b - self.E[i]-self.y[i]*K11*(self.alpha[i]-a1_old)- self.y[j]*K12*(self.alpha[j]-a2_old)
         b2_new = self.b - self.E[j]-self.y[i]*K12*(self.alpha[i]-a1_old)- self.y[j]*K22*(self.alpha[j]-a2_old)
 
-        if self.alpha[j] > 0 and self.alpha[j] < self.C:
+        if self.alpha[i] > 0 and self.alpha[i] < self.C:
             self.b = b1_new
         elif self.alpha[j] > 0 and self.alpha[j] < self.C:
             self.b = b2_new
@@ -202,15 +196,15 @@ class SVMC:
             for i in temp_supportVec:
                 self.updateE(i)
                 if not self.fitKKT(i):
-                    flag = flag and self.interLoop(i, threshold)
+                    flag = flag and self.inerLoop(i, threshold)
 
             if flag: # why flag here?
                 for i in xrange(self.M):
                     self.updateE(i)
                     if not self.fitKKT(i):
-                        flag = flag and self.interLoop(i, threshold)
+                        flag = flag and self.inerLoop(i, threshold)
 
-            print "the %d-th train iter is running: %s" %iters
+            print "the %d-th train iter is running" %iters
 
         self.supportVec = np.nonzero((self.alpha > 0))[0]
 
@@ -270,18 +264,18 @@ class SVMC:
 
         w = w.reshape(1, w.size)
 
-        print np.sum(sign(np.dot(w, self.X) + self.b)).flatten(1) != self.y, "errors"
+        print np.sum(sign(np.dot(w, self.X) + self.b).flatten(1) != self.y), "errors"
 
         x1 = 0
         y1 = -self.b/w[0][1]
         y2 = 0
         x2 = -self.b/w[0][0]
         plt.plot([x1+x1-x2, x2], [y1+y1-y2, y2])
-        plt.axis([0, 30, 0, 30])
+        plt.axis([0, 30, 0, 15])
 
         for i in xrange(self.M):
             if self.y[i] == -1:
-                plt.plot(self.X[0,i], self.X[1,i], 'or')
+                plt.plot(self.X[0, i], self.X[1, i], 'or')
             elif self.y[i] == 1:
                 plt.plot(self.X[0, i], self.X[1,i], 'ob')
 
@@ -294,23 +288,23 @@ class SVMC:
 
 
 
-if __name__ == '__main__':
-
-    trainSet = readSet()
-    trainLabel = readSet()
-
-
-    svms = SVMC(trainSet, trainLabel, kernel=Liner_kernel)
-    svms.train()
-    print len(svms.supportVec), 'Support Vectors'
-
-    for i in xrange(len(svms.supportVec)):
-        t = svms.supportVec[i]
-        print svms.X[:, i]
-
-    predSet = readSet()
-    predLabel = readSet()
-    svms.error(predSet, predLabel)
+# if __name__ == '__main__':
+#
+#     trainSet = readSet()
+#     trainLabel = readSet()
+#
+#
+#     svms = SVMC(trainSet, trainLabel, kernel=Linear_kernel)
+#     svms.train()
+#     print len(svms.supportVec), 'Support Vectors'
+#
+#     for i in xrange(len(svms.supportVec)):
+#         t = svms.supportVec[i]
+#         print svms.X[:, i]
+#
+#     predSet = readSet()
+#     predLabel = readSet()
+#     svms.error(predSet, predLabel)
 
 
 
